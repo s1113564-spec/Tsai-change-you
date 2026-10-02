@@ -1,0 +1,1575 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會計多功能小工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode JS Library for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- jsQR Library for fast & robust image-based QR decoding -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Top Header / Bar (Available across app when logged in) -->
+    <header id="topNav" class="bg-indigo-900 text-white shadow-md border-b border-indigo-800 px-4 py-3 flex flex-wrap items-center justify-between gap-2 hidden">
+        <div class="flex items-center space-x-3">
+            <button id="toggleSidebarBtn" onclick="toggleSidebar()" class="bg-indigo-800 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5" title="收折/展開側邊欄 (讓空間變大)">
+                <i class="fa-solid fa-bars"></i>
+                <span class="hidden sm:inline" id="toggleSidebarText">縮小側欄 (大空間)</span>
+            </button>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-calculator text-yellow-400 text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wide">會計多功能小工具</h1>
+            </div>
+            <span id="userBadge" class="bg-indigo-700 text-indigo-100 text-xs px-2.5 py-1 rounded-full font-mono font-medium"></span>
+        </div>
+
+        <div class="flex items-center space-x-2 text-sm">
+            <!-- Sync Indicator -->
+            <div class="hidden md:flex items-center text-xs text-emerald-300 bg-indigo-950/60 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
+                雲端同步已開啟
+            </div>
+
+            <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1 text-xs sm:text-sm">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>保存</span>
+            </button>
+
+            <button onclick="openDataManagementModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1 text-xs sm:text-sm">
+                <i class="fa-solid fa-database"></i>
+                <span>資料管理</span>
+            </button>
+
+            <button onclick="logout()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1 text-xs sm:text-sm">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>登出</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content View Container -->
+    <main id="mainContainer" class="flex-1 flex flex-col relative overflow-hidden">
+
+        <!-- VIEW 1: HOME PAGE (首頁) -->
+        <section id="viewHome" class="flex-1 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white">
+            <div class="max-w-md w-full bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-slate-700/60">
+                <div class="w-20 h-20 bg-indigo-600/30 border border-indigo-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-yellow-400 text-4xl shadow-inner">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2 tracking-tight text-white">會計多功能小工具</h2>
+                <p class="text-slate-400 text-sm mb-8">整合 101 項專業會計工具與智能 AI 輔助系統</p>
+
+                <div class="space-y-4">
+                    <button onclick="switchView('viewScan')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl transition duration-200 shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-3 group text-lg">
+                        <i class="fa-solid fa-qrcode text-xl group-hover:scale-110 transition-transform"></i>
+                        註冊 (掃描 QR Code)
+                    </button>
+
+                    <button onclick="switchView('viewLogin')" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold py-3.5 px-6 rounded-xl transition duration-200 shadow-md border border-slate-600 flex items-center justify-center gap-3 text-lg">
+                        <i class="fa-solid fa-right-to-bracket text-xl"></i>
+                        登入
+                    </button>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-700/50 text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                    <span>預設管理員帳號：<code class="bg-slate-900 px-1.5 py-0.5 rounded text-indigo-300 font-mono">admin</code> / 密碼：<code class="bg-slate-900 px-1.5 py-0.5 rounded text-indigo-300 font-mono">0215</code></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: REGISTER VIA QR CODE (註冊 - 掃描QR) -->
+        <section id="viewScan" class="hidden flex-1 flex flex-col items-center justify-center p-6 bg-slate-900 text-white">
+            <div class="max-w-md w-full bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode text-indigo-400"></i>
+                        註冊帳號 (QR 辨識)
+                    </h3>
+                    <button onclick="switchView('viewHome')" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium text-slate-200 transition">
+                        <i class="fa-solid fa-house mr-1"></i>回到首頁
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-400 mb-4">開啟鏡頭掃描或上傳包含註冊資訊 (JSON 格式) 的 QR Code 圖片。</p>
+
+                <!-- Scan Mode Tabs -->
+                <div class="flex rounded-xl bg-slate-900 p-1 mb-4 border border-slate-700 text-xs">
+                    <button id="scanTabCamera" onclick="switchScanMode('camera')" class="flex-1 py-2 rounded-lg font-semibold transition bg-indigo-600 text-white flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera"></i> 相機鏡頭掃描
+                    </button>
+                    <button id="scanTabUpload" onclick="switchScanMode('upload')" class="flex-1 py-2 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-file-arrow-up"></i> 上傳 QR 圖片
+                    </button>
+                </div>
+
+                <!-- Mode 1: Camera Scanner Container -->
+                <div id="cameraScanSection" class="block">
+                    <div id="qr-reader" class="overflow-hidden rounded-xl bg-black border border-slate-700 mb-4 min-h-[240px]"></div>
+                    <p class="text-[11px] text-slate-400 text-center mb-3">請確保鏡頭已授權存取並將 QR Code 對準中央方框</p>
+                </div>
+
+                <!-- Mode 2: Upload File Section -->
+                <div id="uploadScanSection" class="hidden mb-4 space-y-3">
+                    <div id="dropZone" 
+                         onclick="document.getElementById('qrFileInput').click()" 
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleFileDrop(event)"
+                         class="border-2 border-dashed border-indigo-500/50 hover:border-indigo-400 bg-slate-900/60 hover:bg-slate-900 p-6 rounded-xl flex flex-col items-center justify-center cursor-pointer transition text-center group">
+                        
+                        <div id="uploadPlaceholder" class="flex flex-col items-center">
+                            <div class="w-12 h-12 rounded-full bg-indigo-600/20 text-indigo-400 group-hover:scale-110 flex items-center justify-center text-xl mb-2 transition">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-200 mb-1">點擊選擇圖片，或直接拖曳圖片至此</p>
+                            <p class="text-[10px] text-slate-400">支援 PNG, JPG, JPEG, WEBP 格式</p>
+                        </div>
+
+                        <!-- Image Preview Box -->
+                        <div id="uploadPreviewBox" class="hidden flex flex-col items-center">
+                            <img id="qrPreviewImg" src="" alt="QR Code Preview" class="max-h-36 rounded-lg border border-slate-600 mb-2 shadow-md">
+                            <span class="text-xs text-indigo-300 font-medium">正在分析圖片 QR Code...</span>
+                        </div>
+                    </div>
+
+                    <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQRFileUpload(event)">
+
+                    <!-- Quick Sample Testing Button -->
+                    <button onclick="generateAndTestSampleQR()" class="w-full bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 font-medium py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-flask text-indigo-400"></i>
+                        無圖片？一鍵測試「範例 QR 碼辨識」
+                    </button>
+                </div>
+
+                <!-- Hidden canvas helper for JS QR decoding -->
+                <canvas id="qrHelperCanvas" class="hidden"></canvas>
+                <div id="qr-file-helper-div" class="hidden"></div>
+
+                <div class="space-y-3">
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-slate-700"></div>
+                        <span class="flex-shrink mx-3 text-slate-500 text-xs">或手動模擬掃描 QR</span>
+                        <div class="flex-grow border-t border-slate-700"></div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="simulatedQrInput" placeholder='{"user":"newUser","pass":"8888"}' class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                        <button onclick="simulateQRScan()" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap">模擬掃描</button>
+                    </div>
+
+                    <button onclick="switchView('viewHome')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-xl text-xs transition mt-1">
+                        <i class="fa-solid fa-arrow-left mr-1.5"></i>返回首頁
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: LOGIN PAGE (登入) -->
+        <section id="viewLogin" class="hidden flex-1 flex flex-col items-center justify-center p-6 bg-slate-900 text-white">
+            <div class="max-w-md w-full bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-indigo-400"></i>
+                        會員登入
+                    </h3>
+                    <button onclick="switchView('viewHome')" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium text-slate-200 transition">
+                        <i class="fa-solid fa-house mr-1"></i>回到首頁
+                    </button>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">帳號 (Username)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3 py-3 text-slate-500 text-sm"></i>
+                            <input type="text" id="loginUsername" required placeholder="例如: admin 或 註冊帳號" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">密碼 (Password)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3 py-3 text-slate-500 text-sm"></i>
+                            <input type="password" id="loginPassword" required placeholder="請輸入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-indigo-600/30 text-base mt-2">
+                        登入系統
+                    </button>
+                </form>
+
+                <div class="mt-6 pt-4 border-t border-slate-700/60 text-center text-xs text-slate-400">
+                    提示：Admin 帳號 <code class="text-indigo-300">admin</code> / 密碼 <code class="text-indigo-300">0215</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: MAIN APP WORKSPACE (登入後：101個小工具與管理) -->
+        <section id="viewApp" class="hidden flex-1 flex flex-row overflow-hidden relative">
+
+            <!-- SIDEBAR: 小項列 (1/4 寬度, 可收折讓空間變大) -->
+            <aside id="appSidebar" class="w-full md:w-1/4 min-w-[260px] max-w-[320px] bg-white border-r border-slate-200 flex flex-col shadow-sm transition-all duration-300 z-10">
+                <!-- Sidebar Header & Search -->
+                <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-indigo-600"></i>
+                            會計小工具列表 (101項)
+                        </span>
+                        <span id="toolCountBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">101</span>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="toolSearchInput" oninput="filterTools()" placeholder="搜尋小工具 (例如: 折舊, 稅務, 報表...)" class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Tools Navigation List -->
+                <div id="toolList" class="flex-1 overflow-y-auto divide-y divide-slate-100">
+                    <!-- Tool items populated dynamically via JS -->
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT: 顯視小工具 (3/4 寬度) -->
+            <main id="appContent" class="flex-1 bg-slate-50 overflow-y-auto p-4 md:p-6 flex flex-col">
+                <div id="toolDisplayArea" class="max-w-5xl w-full mx-auto flex-1 flex flex-col">
+                    <!-- Selected Tool View will render here -->
+                </div>
+            </main>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: Data Management Modal (資料管理) -->
+    <div id="dataMgmtModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
+                <h3 class="font-bold flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-database text-yellow-400"></i>
+                    資料管理與儲存 (Data Storage)
+                </h3>
+                <button onclick="closeDataManagementModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-sm text-slate-700 overflow-y-auto flex-1">
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900 space-y-1">
+                    <p class="font-bold flex items-center gap-1"><i class="fa-solid fa-circle-info"></i> 儲存機制說明：</p>
+                    <p>全資料優先以本地與 Cookie 保存。當資料大小超過 <span class="font-bold text-indigo-700">4KB</span> 時，自動同步備份至雲端硬碟備份槽。</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div class="text-xs text-slate-500 mb-1">目前資料大小 (Storage Size)</div>
+                    <div class="flex items-center justify-between">
+                        <span id="dataSizeLabel" class="font-mono font-bold text-slate-800 text-sm">1.2 KB</span>
+                        <span id="dataStorageType" class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">標準 Cookie / LocalStorage</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-solid fa-download"></i> 匯出完整帳務 JSON 備份檔
+                    </button>
+                    <button onclick="copyJsonBackupText()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-solid fa-copy"></i> 複製帳務 JSON 文字 (iPad/手機備用)
+                    </button>
+                    <button onclick="toggleJsonImportBox()" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-solid fa-file-import"></i> 貼上 JSON 文字還原 / 匯入資料
+                    </button>
+                    <button onclick="clearAllData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-solid fa-trash-can"></i> 重置 / 清除所有本地系統快取與資料
+                    </button>
+                </div>
+
+                <!-- JSON Import / Restore Box -->
+                <div id="jsonImportBox" class="hidden space-y-2 pt-2 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-paste text-emerald-600"></i> 貼上 JSON 備份文字以還原資料：
+                    </label>
+                    <textarea id="jsonImportTextArea" placeholder="請在此貼上之前備份的 JSON 文字內容 (例如: [{ &quot;user&quot;: &quot;admin&quot;, &quot;pass&quot;: &quot;0215&quot; }])" class="w-full h-28 bg-slate-50 border border-slate-300 rounded-xl p-2 font-mono text-[11px] text-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
+                    <button onclick="importJsonData()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-check"></i> 確認貼上並還原資料
+                    </button>
+                </div>
+
+                <!-- JSON Text Area for iPad manual copy fallback -->
+                <div id="jsonCopyBox" class="hidden space-y-2 pt-2 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700">備份 JSON 文字：</label>
+                    <textarea id="jsonTextArea" readonly class="w-full h-28 bg-slate-100 border border-slate-300 rounded-xl p-2 font-mono text-[11px] text-slate-800 focus:outline-none"></textarea>
+                    <p class="text-[10px] text-slate-500">可全選上方文字儲存為備份檔案。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Add Account Modal (新增帳號) -->
+    <div id="addAccountModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
+                <h3 class="font-bold flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-user-plus text-indigo-400"></i>
+                    手動新增帳號
+                </h3>
+                <button onclick="closeAddAccountModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">帳號名稱 (Username)</label>
+                    <input type="text" id="addAccUser" placeholder="例如：user001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">設定密碼 (Password)</label>
+                    <input type="text" id="addAccPass" placeholder="例如：8888" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">權限角色 (Role)</label>
+                    <select id="addAccRole" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500">
+                        <option value="user">一般用戶 (User)</option>
+                        <option value="admin">管理員 (Admin)</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeAddAccountModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl font-semibold transition">取消</button>
+                    <button onclick="submitAddAccount()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl font-semibold transition shadow-md">確定新增</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Edit Account Password Modal (修改密碼) -->
+    <div id="editAccountModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+                    編輯帳號密碼
+                </h3>
+                <button onclick="closeEditAccountModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-500 font-semibold mb-1">帳號名稱</label>
+                    <input type="text" id="editAccUser" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-600 font-mono cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">輸入新密碼 (New Password)</label>
+                    <input type="text" id="editAccPass" placeholder="請輸入新密碼" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeEditAccountModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl font-semibold transition">取消</button>
+                    <button onclick="submitEditAccount()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-xl font-semibold transition shadow-md">儲存修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Confirm Delete Modal (刪除確認) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="bg-rose-600 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+                    確認刪除帳號
+                </h3>
+                <button onclick="closeDeleteModal()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <p id="deleteModalMessage" class="text-slate-700 leading-relaxed">確定要刪除此帳號嗎？</p>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl font-semibold transition">取消</button>
+                    <button onclick="submitDeleteAccount()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-xl font-semibold transition shadow-md">確定刪除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default system user accounts store
+        let userAccounts = [
+            { user: "admin", pass: "0215", role: "admin", created: "2026-01-01" },
+            { user: "accountant01", pass: "8888", role: "user", created: "2026-02-15" }
+        ];
+
+        let currentUser = null; // Holds currently logged-in user object
+        let currentView = 'viewHome';
+        let currentToolId = 1;
+        let qrScanner = null;
+        let pendingEditUser = null;
+        let pendingDeleteUser = null;
+
+        // List of 101 Accounting Multi-Tools generated & organized into categories
+        const accountingTools = [
+            // Admin-only tools
+            { id: "qr_generator", name: "QR Code 註冊生成器", category: "管理員專用", adminOnly: true, icon: "fa-qrcode" },
+            { id: "account_mgmt", name: "帳密管理 (可編輯/刪除)", category: "管理員專用", adminOnly: true, icon: "fa-users-gear" },
+
+            // General 101 Accounting Tools
+            { id: 1, name: "Gemini AI 會計助理", category: "AI智能", icon: "fa-robot", desc: "輸入任何會計難題或分錄疑問，由 Gemini 生成解答" },
+            { id: 2, name: "綜合損益表簡易試算", category: "財務報表", icon: "fa-file-invoice-dollar", desc: "計算營業收入、成本、營業費用與淨利" },
+            { id: 3, name: "資產負債平衡表檢查器", category: "財務報表", icon: "fa-scale-balanced", desc: "驗證 資產 = 負債 + 業主權益" },
+            { id: 4, name: "營業稅 (VAT 5%) 計算器", category: "稅務小工具", icon: "fa-percent", desc: "自動將含稅金額拆解為未稅價與5%銷項營業稅" },
+            { id: 5, name: "直線法折舊費用計算", category: "資產折舊", icon: "fa-chart-line-down", desc: "依耐用年限與殘值快速計算每月折舊" },
+            { id: 6, name: "雙倍餘額遞減折舊法", category: "資產折舊", icon: "fa-arrow-trend-down", desc: "加速折舊費用計算與累計折舊估算" },
+            { id: 7, name: "損益兩平點 (Breakeven) 試算", category: "成本會計", icon: "fa-chart-pie", desc: "計算固定成本、變動成本與損益兩平銷售量" },
+            { id: 8, name: "應收帳款週轉率與天數", category: "財務分析", icon: "fa-clock-rotate-left", desc: "衡量公司收回應收帳款的效率" },
+            { id: 9, name: "存貨週轉率與銷貨天數", category: "財務分析", icon: "fa-boxes-packing", desc: "計算存貨週轉次數與平均變現天數" },
+            { id: 10, name: "現金流量折現 (DCF) 估值", category: "財務管理", icon: "fa-coins", desc: "計算未來現金流量的當前價值 (NPV)" },
+            { id: 11, name: "應付憑單與發票連號核對", category: "內部控制", icon: "fa-receipt", desc: "檢查連號發票是否有缺號或重複" },
+            { id: 12, name: "薪資代扣所得稅與勞健保", category: "薪酬會計", icon: "fa-users-viewfinder", desc: "員工薪資淨額與雇主負擔成本試算" },
+            { id: 13, name: "零用金撥補與清單管理", category: "出納管理", icon: "fa-wallet", desc: "零用金小額支出記錄與零用金盤點" },
+            { id: 14, name: "銀行存款調節表製作", category: "出納管理", icon: "fa-building-columns", desc: "調節公司帳面金額與銀行對帳單差異" },
+            { id: 15, name: "毛利率與營業利益率分析", category: "財務分析", icon: "fa-chart-column", desc: "快速評估產品線獲利能力" },
+            { id: 16, name: "外幣匯率換算與匯兌損益", category: "外匯管理", icon: "fa-money-bill-transfer", desc: "計算入帳匯率與期末評價匯兌損益" },
+            { id: 17, name: "貸款本息平均攤還計算器", category: "資融籌措", icon: "fa-hand-holding-dollar", desc: "分期付款與銀行貸款本息攤還明細" },
+            { id: 18, name: "備抵損失 (壞帳) 提列估計", category: "資產減損", icon: "fa-user-slash", desc: "依應收帳款賬齡分析提列備抵呆帳" },
+            { id: 19, name: "銷貨折扣與現金折扣計算", category: "商業條款", icon: "fa-tags", desc: "例如 2/10, n/30 現金折扣效益評估" },
+            { id: 20, name: "營利事業所得稅估算器", category: "稅務小工具", icon: "fa-landmark", desc: "企業課稅所得額與預估營所稅額" }
+        ];
+
+        // Fill remaining up to 101 tools systematically
+        const toolCategories = ["會計分錄", "成本會計", "審計查核", "管理會計", "專案預算", "稅務籌劃", "存貨控制"];
+        for (let i = 21; i <= 101; i++) {
+            const cat = toolCategories[i % toolCategories.length];
+            accountingTools.push({
+                id: i,
+                name: `會計工具 ${i}: ${cat}專用項 #${i}`,
+                category: cat,
+                icon: "fa-calculator",
+                desc: `專業會計第 ${i} 項輔助計算與分錄說明`
+            });
+        }
+
+        window.onload = function() {
+            loadAccountsFromStorage();
+            renderToolList();
+            checkAutoLogin();
+        };
+
+        // Storage helpers
+        function loadAccountsFromStorage() {
+            try {
+                const stored = localStorage.getItem('app_user_accounts');
+                if (stored) {
+                    userAccounts = JSON.parse(stored);
+                }
+            } catch(e) {
+                console.error("Failed loading stored accounts", e);
+            }
+        }
+
+        function saveAccountsToStorage() {
+            try {
+                localStorage.setItem('app_user_accounts', JSON.stringify(userAccounts));
+                updateStorageSizeLabel();
+            } catch(e) {
+                console.error("Failed saving accounts", e);
+            }
+        }
+
+        function updateStorageSizeLabel() {
+            const str = JSON.stringify(userAccounts);
+            const kb = (str.length / 1024).toFixed(2);
+            const sizeLabel = document.getElementById('dataSizeLabel');
+            const typeLabel = document.getElementById('dataStorageType');
+
+            if (sizeLabel) sizeLabel.textContent = `${kb} KB`;
+            if (typeLabel) {
+                if (str.length > 4096) {
+                    typeLabel.textContent = "超過 4KB - 雲端硬碟備份模式";
+                    typeLabel.className = "text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800";
+                } else {
+                    typeLabel.textContent = "標準 Cookie / LocalStorage";
+                    typeLabel.className = "text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800";
+                }
+            }
+        }
+
+        function switchView(viewId) {
+            currentView = viewId;
+            const views = ['viewHome', 'viewScan', 'viewLogin', 'viewApp'];
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById(viewId);
+            if (target) target.classList.remove('hidden');
+
+            const topNav = document.getElementById('topNav');
+            if (viewId === 'viewApp') {
+                topNav.classList.remove('hidden');
+            } else {
+                topNav.classList.add('hidden');
+            }
+
+            // Clean up QR Scanner if switching away from scan
+            if (viewId !== 'viewScan' && qrScanner) {
+                try {
+                    qrScanner.clear();
+                } catch(e){}
+            }
+
+            // Init scanner if in scan view
+            if (viewId === 'viewScan') {
+                initQRScanner();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+
+            const found = userAccounts.find(acc => acc.user === u && acc.pass === p);
+
+            if (found) {
+                currentUser = found;
+                document.getElementById('userBadge').textContent = `${currentUser.user} (${currentUser.role === 'admin' ? '管理員' : '一般用戶'})`;
+
+                renderToolList();
+                if (currentUser.role === 'admin') {
+                    selectTool('qr_generator');
+                } else {
+                    selectTool(1);
+                }
+
+                switchView('viewApp');
+                alertToast(`歡迎回來，${currentUser.user}！`, 'success');
+            } else {
+                alertToast('帳號或密碼錯誤！請重新輸入。', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            switchView('viewHome');
+            alertToast('已安全登出系統。', 'info');
+        }
+
+        function initQRScanner() {
+            setTimeout(() => {
+                const scannerContainer = document.getElementById('qr-reader');
+                if (!scannerContainer) return;
+
+                scannerContainer.innerHTML = '';
+                try {
+                    qrScanner = new Html5QrcodeScanner("qr-reader", { 
+                        fps: 10, 
+                        qrbox: { width: 200, height: 200 },
+                        rememberLastUsedCamera: true
+                    }, false);
+
+                    qrScanner.render((decodedText) => {
+                        alertToast('成功從相機鏡頭讀取 QR Code！', 'success');
+                        processQRData(decodedText);
+                    }, (error) => {});
+                } catch(e) {
+                    console.error("Camera init error:", e);
+                }
+            }, 100);
+        }
+
+        function switchScanMode(mode) {
+            const camSec = document.getElementById('cameraScanSection');
+            const upSec = document.getElementById('uploadScanSection');
+            const camTab = document.getElementById('scanTabCamera');
+            const upTab = document.getElementById('scanTabUpload');
+
+            if (mode === 'camera') {
+                camSec.classList.remove('hidden');
+                upSec.classList.add('hidden');
+                camTab.className = "flex-1 py-2 rounded-lg font-semibold transition bg-indigo-600 text-white flex items-center justify-center gap-1.5";
+                upTab.className = "flex-1 py-2 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center justify-center gap-1.5";
+                initQRScanner();
+            } else {
+                camSec.classList.add('hidden');
+                upSec.classList.remove('hidden');
+                upTab.className = "flex-1 py-2 rounded-lg font-semibold transition bg-indigo-600 text-white flex items-center justify-center gap-1.5";
+                camTab.className = "flex-1 py-2 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center justify-center gap-1.5";
+                if (qrScanner) {
+                    try { qrScanner.clear(); } catch(e){}
+                }
+            }
+        }
+
+        /* Drag & Drop Handlers for QR Upload */
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('dropZone');
+            if (dropZone) dropZone.classList.add('border-indigo-400', 'bg-slate-800');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('dropZone');
+            if (dropZone) dropZone.classList.remove('border-indigo-400', 'bg-slate-800');
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('dropZone');
+            if (dropZone) dropZone.classList.remove('border-indigo-400', 'bg-slate-800');
+
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processSelectedQRFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleQRFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processSelectedQRFile(file);
+            }
+            event.target.value = '';
+        }
+
+        function processSelectedQRFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alertToast('請選擇圖檔 (PNG, JPG, WEBP 等格式)！', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgDataUrl = e.target.result;
+                const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+                const uploadPreviewBox = document.getElementById('uploadPreviewBox');
+                const qrPreviewImg = document.getElementById('qrPreviewImg');
+
+                if (uploadPlaceholder) uploadPlaceholder.classList.add('hidden');
+                if (uploadPreviewBox) uploadPreviewBox.classList.remove('hidden');
+                if (qrPreviewImg) qrPreviewImg.src = imgDataUrl;
+
+                alertToast('正在讀取上傳的 QR Code 圖片...', 'info');
+                decodeQRFromImage(imgDataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function decodeQRFromImage(imageSrc) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.getElementById('qrHelperCanvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                let code = null;
+                if (window.jsQR) {
+                    code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                }
+
+                if (code && code.data) {
+                    alertToast('成功解析圖片中的 QR Code！', 'success');
+                    processQRData(code.data);
+                } else {
+                    const html5QrCode = new Html5Qrcode("qr-file-helper-div");
+                    html5QrCode.scanFile(dataURLtoFile(imageSrc, 'qr_scan.png'), true)
+                        .then(decodedText => {
+                            alertToast('成功解析圖片中的 QR Code！', 'success');
+                            processQRData(decodedText);
+                            html5QrCode.clear();
+                        })
+                        .catch(err => {
+                            alertToast('無法辨識圖片中的 QR Code，請確認圖片清晰並包含註冊資訊！', 'error');
+                            html5QrCode.clear();
+                        });
+                }
+            };
+            img.src = imageSrc;
+        }
+
+        function dataURLtoFile(dataurl, filename) {
+            let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type:mime});
+        }
+
+        function generateAndTestSampleQR() {
+            const sampleUser = "testUser_" + Math.floor(Math.random() * 1000);
+            const samplePass = "pass" + Math.floor(1000 + Math.random() * 9000);
+            const payload = JSON.stringify({ user: sampleUser, pass: samplePass });
+
+            const tempDiv = document.createElement('div');
+            new QRCode(tempDiv, {
+                text: payload,
+                width: 200,
+                height: 200,
+                colorDark: "#1e1b4b",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            setTimeout(() => {
+                const img = tempDiv.querySelector('img');
+                if (img && img.src) {
+                    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+                    const uploadPreviewBox = document.getElementById('uploadPreviewBox');
+                    const qrPreviewImg = document.getElementById('qrPreviewImg');
+
+                    if (uploadPlaceholder) uploadPlaceholder.classList.add('hidden');
+                    if (uploadPreviewBox) uploadPreviewBox.classList.remove('hidden');
+                    if (qrPreviewImg) qrPreviewImg.src = img.src;
+
+                    alertToast(`已生成測試用範例 QR 碼 (${sampleUser})，開始執行解析...`, 'info');
+                    decodeQRFromImage(img.src);
+                }
+            }, 100);
+        }
+
+        function simulateQRScan() {
+            const val = document.getElementById('simulatedQrInput').value.trim() || '{"user":"newUser_' + Math.floor(Math.random()*1000) + '","pass":"8888"}';
+            processQRData(val);
+        }
+
+        function processQRData(dataString) {
+            try {
+                let parsed = null;
+                try {
+                    parsed = JSON.parse(dataString);
+                } catch(e) {
+                    const parts = dataString.split(':');
+                    if (parts.length === 2) {
+                        parsed = { user: parts[0], pass: parts[1] };
+                    }
+                }
+
+                if (parsed && parsed.user && parsed.pass) {
+                    const existing = userAccounts.find(a => a.user === parsed.user);
+                    if (existing) {
+                        alertToast(`帳號 [${parsed.user}] 已存在，請直接登入！`, 'warning');
+                    } else {
+                        userAccounts.push({
+                            user: parsed.user,
+                            pass: parsed.pass,
+                            role: 'user',
+                            created: new Date().toISOString().split('T')[0]
+                        });
+                        saveAccountsToStorage();
+                        alertToast(`掃描成功！已自動註冊新帳號: ${parsed.user}`, 'success');
+                    }
+
+                    document.getElementById('loginUsername').value = parsed.user;
+                    document.getElementById('loginPassword').value = parsed.pass;
+                    switchView('viewLogin');
+                } else {
+                    alertToast('QR Code 格式無效，請確保格式為包含帳號與密碼的 JSON！', 'error');
+                }
+            } catch(e) {
+                alertToast('QR 碼解析失敗！', 'error');
+            }
+        }
+
+        let sidebarCollapsed = false;
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const toggleText = document.getElementById('toggleSidebarText');
+
+            if (!sidebarCollapsed) {
+                sidebar.classList.add('hidden', 'md:hidden');
+                if (toggleText) toggleText.textContent = "展開側欄";
+                sidebarCollapsed = true;
+            } else {
+                sidebar.classList.remove('hidden', 'md:hidden');
+                if (toggleText) toggleText.textContent = "縮小側欄 (大空間)";
+                sidebarCollapsed = false;
+            }
+        }
+
+        function renderToolList() {
+            const toolListEl = document.getElementById('toolList');
+            if (!toolListEl) return;
+
+            toolListEl.innerHTML = '';
+
+            const visibleTools = accountingTools.filter(t => {
+                if (t.adminOnly && (!currentUser || currentUser.role !== 'admin')) {
+                    return false;
+                }
+                return true;
+            });
+
+            visibleTools.forEach(tool => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 flex items-start space-x-3 transition hover:bg-indigo-50/70 border-l-4 ${tool.id === currentToolId ? 'bg-indigo-50 border-indigo-600 text-indigo-900 font-semibold' : 'border-transparent text-slate-700'}`;
+                btn.onclick = () => selectTool(tool.id);
+
+                btn.innerHTML = `
+                    <div class="mt-0.5 text-indigo-600 text-sm">
+                        <i class="fa-solid ${tool.icon || 'fa-calculator'}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold truncate">${tool.name}</div>
+                        <div class="text-[10px] text-slate-400 truncate">${tool.category}</div>
+                    </div>
+                `;
+                toolListEl.appendChild(btn);
+            });
+        }
+
+        function filterTools() {
+            const query = document.getElementById('toolSearchInput').value.toLowerCase().trim();
+            const items = document.getElementById('toolList').children;
+
+            let count = 0;
+            accountingTools.forEach((tool) => {
+                if (tool.adminOnly && (!currentUser || currentUser.role !== 'admin')) return;
+
+                const match = tool.name.toLowerCase().includes(query) || tool.category.toLowerCase().includes(query);
+                if (items[count]) {
+                    items[count].style.display = match ? 'flex' : 'none';
+                }
+                count++;
+            });
+        }
+
+        function selectTool(toolId) {
+            currentToolId = toolId;
+            renderToolList();
+
+            const display = document.getElementById('toolDisplayArea');
+            if (!display) return;
+
+            display.innerHTML = '';
+
+            if (toolId === 'qr_generator') {
+                renderQRGeneratorView(display);
+            } else if (toolId === 'account_mgmt') {
+                renderAccountMgmtView(display);
+            } else if (toolId === 1) {
+                renderGeminiAiAssistantView(display);
+            } else if (toolId === 2) {
+                renderIncomeStatementView(display);
+            } else if (toolId === 4) {
+                renderVATCalculatorView(display);
+            } else {
+                renderGenericToolView(display, toolId);
+            }
+
+            // 自動將工具內容視窗與頁面平滑捲動至最頂端，解決滑動體驗問題
+            const appContent = document.getElementById('appContent');
+            if (appContent) {
+                appContent.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderQRGeneratorView(container) {
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center space-x-3 mb-4 pb-3 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">QR Code 註冊生成器 (管理員專用)</h2>
+                            <p class="text-xs text-slate-500">打上新帳密，系統將自動生成專屬 QR Code 供他人掃描或上傳註冊</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">給予新用戶的帳號 (Username)</label>
+                                <input type="text" id="newQrUser" placeholder="例如: acc_staff01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">設定預設密碼 (Password)</label>
+                                <input type="text" id="newQrPass" placeholder="例如: 8888" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500">
+                            </div>
+
+                            <button onclick="generateNewUserQR()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                自動生成註冊 QR Code
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <div id="qrcodeCanvas" class="bg-white p-3 rounded-xl shadow-md border border-slate-200 mb-3 flex items-center justify-center min-w-[160px] min-h-[160px]">
+                                <span class="text-xs text-slate-400">請填寫左側欄位後點擊生成</span>
+                            </div>
+                            <div id="qrDataSummary" class="text-xs text-slate-500 font-mono text-center mb-2"></div>
+                            
+                            <button id="downloadQrBtn" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-4 rounded-xl transition shadow-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-download"></i>
+                                下載 QR Code 圖片檔
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateNewUserQR() {
+            const u = document.getElementById('newQrUser').value.trim();
+            const p = document.getElementById('newQrPass').value.trim();
+
+            if (!u || !p) {
+                alertToast('請完整填寫新帳號與密碼！', 'warning');
+                return;
+            }
+
+            const canvasContainer = document.getElementById('qrcodeCanvas');
+            canvasContainer.innerHTML = '';
+
+            const qrPayload = JSON.stringify({ user: u, pass: p });
+
+            new QRCode(canvasContainer, {
+                text: qrPayload,
+                width: 150,
+                height: 150,
+                colorDark : "#1e1b4b",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qrDataSummary').innerHTML = `
+                <span class="text-indigo-600 font-bold">帳號: ${u}</span> | <span>密碼: ${p}</span><br>
+                <span class="text-[10px] text-slate-400">他人可透過「相機掃描」或「上傳此圖片」直接註冊</span>
+            `;
+
+            setTimeout(() => {
+                const img = canvasContainer.querySelector('img');
+                const downloadBtn = document.getElementById('downloadQrBtn');
+
+                if (img && downloadBtn) {
+                    downloadBtn.onclick = function() {
+                        const link = document.createElement('a');
+                        link.download = `QR_Register_${u}.png`;
+                        link.href = img.src;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        alertToast(`已下載 [${u}] 的 QR Code 圖片！`, 'success');
+                    };
+                    downloadBtn.classList.remove('hidden');
+                }
+            }, 150);
+
+            alertToast(`成功為 [${u}] 生成專屬註冊 QR Code！`, 'success');
+        }
+
+        function renderAccountMgmtView(container) {
+            let rowsHtml = '';
+            userAccounts.forEach((acc) => {
+                rowsHtml += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 text-xs">
+                        <td class="p-3 font-mono font-bold text-slate-800">${acc.user}</td>
+                        <td class="p-3 font-mono text-slate-600">${acc.pass}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${acc.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}">
+                                ${acc.role === 'admin' ? '管理員' : '一般用戶'}
+                            </span>
+                        </td>
+                        <td class="p-3 text-slate-400">${acc.created || '2026-01-01'}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openEditAccountModal('${acc.user}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg transition font-medium">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i>編輯密碼
+                            </button>
+                            ${acc.user !== 'admin' ? `
+                                <button onclick="openDeleteModal('${acc.user}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition font-medium">
+                                    <i class="fa-solid fa-trash-can mr-1"></i>刪除帳密
+                                </button>
+                            ` : '<span class="text-[10px] text-slate-400 italic">系統主帳號無法刪除</span>'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-users-gear"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800">帳密管理控制台</h2>
+                                <p class="text-xs text-slate-500">可以新增、編輯與<strong class="text-rose-600">刪除帳密</strong></p>
+                            </div>
+                        </div>
+
+                        <button onclick="openAddAccountModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-user-plus"></i>
+                            手動新增帳號
+                        </button>
+                    </div>
+
+                    <!-- Accounts Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                                    <th class="p-3">帳號 (User)</th>
+                                    <th class="p-3">密碼 (Password)</th>
+                                    <th class="p-3">權限角色</th>
+                                    <th class="p-3">建立日期</th>
+                                    <th class="p-3 text-right">管理操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* --- Account Management Modals Logic --- */
+        function openAddAccountModal() {
+            document.getElementById('addAccUser').value = '';
+            document.getElementById('addAccPass').value = '';
+            document.getElementById('addAccRole').value = 'user';
+            document.getElementById('addAccountModal').classList.remove('hidden');
+        }
+
+        function closeAddAccountModal() {
+            document.getElementById('addAccountModal').classList.add('hidden');
+        }
+
+        function submitAddAccount() {
+            const u = document.getElementById('addAccUser').value.trim();
+            const p = document.getElementById('addAccPass').value.trim();
+            const r = document.getElementById('addAccRole').value;
+
+            if (!u || !p) {
+                alertToast('請完整輸入帳號與密碼！', 'warning');
+                return;
+            }
+
+            if (userAccounts.some(a => a.user === u)) {
+                alertToast(`帳號 [${u}] 已存在，請使用其他名稱！`, 'error');
+                return;
+            }
+
+            userAccounts.push({
+                user: u,
+                pass: p,
+                role: r,
+                created: new Date().toISOString().split('T')[0]
+            });
+
+            saveAccountsToStorage();
+            closeAddAccountModal();
+            selectTool('account_mgmt');
+            alertToast(`新增帳號 [${u}] 成功！`, 'success');
+        }
+
+        function openEditAccountModal(username) {
+            const acc = userAccounts.find(a => a.user === username);
+            if (!acc) return;
+
+            pendingEditUser = username;
+            document.getElementById('editAccUser').value = acc.user;
+            document.getElementById('editAccPass').value = acc.pass;
+            document.getElementById('editAccountModal').classList.remove('hidden');
+        }
+
+        function closeEditAccountModal() {
+            pendingEditUser = null;
+            document.getElementById('editAccountModal').classList.add('hidden');
+        }
+
+        function submitEditAccount() {
+            if (!pendingEditUser) return;
+            const newPass = document.getElementById('editAccPass').value.trim();
+
+            if (!newPass) {
+                alertToast('密碼不能為空！', 'warning');
+                return;
+            }
+
+            const acc = userAccounts.find(a => a.user === pendingEditUser);
+            if (acc) {
+                acc.pass = newPass;
+                saveAccountsToStorage();
+                closeEditAccountModal();
+                selectTool('account_mgmt');
+                alertToast(`已成功修改 [${acc.user}] 的密碼！`, 'success');
+            }
+        }
+
+        function openDeleteModal(username) {
+            if (username === 'admin') {
+                alertToast('主管理員帳號 (admin) 為系統必須帳號，不可刪除！', 'error');
+                return;
+            }
+            pendingDeleteUser = username;
+            document.getElementById('deleteModalMessage').textContent = `確定要刪除帳密 [${username}] 嗎？刪除後該用戶將無法再登入系統。`;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteUser = null;
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+        }
+
+        function submitDeleteAccount() {
+            if (!pendingDeleteUser) return;
+
+            userAccounts = userAccounts.filter(a => a.user !== pendingDeleteUser);
+            saveAccountsToStorage();
+            closeDeleteModal();
+            selectTool('account_mgmt');
+            alertToast(`已成功刪除帳號 [${pendingDeleteUser}]！`, 'success');
+        }
+
+        function renderGeminiAiAssistantView(container) {
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col">
+                    <div class="flex items-center space-x-3 mb-4 pb-3 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Gemini 2.5 會計 AI 智能助手</h2>
+                            <p class="text-xs text-slate-500">由 Gemini Flash 強力驅動，隨時解答 101 項會計實務難題與分錄分析</p>
+                        </div>
+                    </div>
+
+                    <!-- AI Chat Box -->
+                    <div id="aiChatOutput" class="flex-1 min-h-[220px] bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200 overflow-y-auto space-y-3">
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 text-xs text-slate-700 max-w-[85%] shadow-sm">
+                            <span class="font-bold text-purple-700 block mb-1">🤖 Gemini AI 顧問:</span>
+                            您好！我是您的 AI 會計顧問。請問今天需要協助解析什麼會計分錄、稅務法規或報表問題嗎？
+                        </div>
+                    </div>
+
+                    <!-- AI Input Area -->
+                    <div class="flex gap-2">
+                        <input type="text" id="aiPromptInput" placeholder="例如：請說明買設備付現與開票的分錄如何做？" onkeypress="if(event.key==='Enter') callGeminiAi()" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-500">
+                        <button onclick="callGeminiAi()" class="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs transition flex items-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            發送
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function callGeminiAi() {
+            const input = document.getElementById('aiPromptInput');
+            const chatOutput = document.getElementById('aiChatOutput');
+            const prompt = input.value.trim();
+
+            if (!prompt) return;
+
+            chatOutput.innerHTML += `
+                <div class="bg-indigo-600 text-white p-3 rounded-xl text-xs max-w-[85%] ml-auto shadow-sm">
+                    ${prompt}
+                </div>
+            `;
+            input.value = '';
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+
+            const loadingId = 'loading_' + Date.now();
+            chatOutput.innerHTML += `
+                <div id="${loadingId}" class="bg-white p-3 rounded-xl border border-slate-200 text-xs text-slate-500 max-w-[85%] shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-circle-notch animate-spin text-purple-600"></i>
+                    Gemini AI 正在分析思考中...
+                </div>
+            `;
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+
+            try {
+                const systemPrompt = "你是一位精通會計學、台灣稅務法規與財務分析的資深會計師。請以簡明扼要、專業條理分明的方式回答使用者的會計問題。";
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "抱歉，目前 AI 服務回應異常，請稍後再試。";
+
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) {
+                    loadingEl.className = "bg-white p-3 rounded-xl border border-slate-200 text-xs text-slate-800 max-w-[85%] shadow-sm";
+                    loadingEl.innerHTML = `
+                        <span class="font-bold text-purple-700 block mb-1">🤖 Gemini AI 顧問:</span>
+                        <div class="whitespace-pre-line leading-relaxed">${reply}</div>
+                    `;
+                }
+            } catch(e) {
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) {
+                    loadingEl.innerHTML = `<span class="text-rose-600 font-bold">連線失敗，請檢查網路狀態。</span>`;
+                }
+            }
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+
+        function renderIncomeStatementView(container) {
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i>
+                        綜合損益表簡易試算器
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">營業收入 (Revenue)</label>
+                            <input type="number" id="isRev" value="1000000" oninput="calcIncomeStatement()" class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">營業成本 (COGS)</label>
+                            <input type="number" id="isCogs" value="600000" oninput="calcIncomeStatement()" class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">營業費用 (Operating Expenses)</label>
+                            <input type="number" id="isOpex" value="200000" oninput="calcIncomeStatement()" class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">營業外損益 (Non-Op Income/Loss)</label>
+                            <input type="number" id="isNonOp" value="10000" oninput="calcIncomeStatement()" class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+                    </div>
+
+                    <div id="isResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1">
+                    </div>
+                </div>
+            `;
+            calcIncomeStatement();
+        }
+
+        function calcIncomeStatement() {
+            const rev = parseFloat(document.getElementById('isRev')?.value) || 0;
+            const cogs = parseFloat(document.getElementById('isCogs')?.value) || 0;
+            const opex = parseFloat(document.getElementById('isOpex')?.value) || 0;
+            const nonOp = parseFloat(document.getElementById('isNonOp')?.value) || 0;
+
+            const grossProfit = rev - cogs;
+            const opIncome = grossProfit - opex;
+            const netIncome = opIncome + nonOp;
+
+            const resultEl = document.getElementById('isResult');
+            if (resultEl) {
+                resultEl.innerHTML = `
+                    <div class="flex justify-between font-semibold"><span>營業毛利 (Gross Profit):</span> <span class="font-mono">$${grossProfit.toLocaleString()}</span></div>
+                    <div class="flex justify-between font-semibold"><span>營業利益 (Operating Income):</span> <span class="font-mono">$${opIncome.toLocaleString()}</span></div>
+                    <div class="flex justify-between text-sm font-bold border-t border-emerald-300 pt-1 text-emerald-950"><span>本期稅前淨利 (Net Income):</span> <span class="font-mono">$${netIncome.toLocaleString()}</span></div>
+                `;
+            }
+        }
+
+        function renderVATCalculatorView(container) {
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-percent text-indigo-600"></i>
+                        營業稅 (VAT 5%) 自動拆解試算器
+                    </h2>
+
+                    <div class="space-y-3 max-w-md">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">輸入總金額 (含稅金額 Sales Amount Tax Inclusive)</label>
+                            <input type="number" id="vatTotal" value="10500" oninput="calcVAT()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <div id="vatResults" class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs space-y-2 text-indigo-900">
+                        </div>
+                    </div>
+                </div>
+            `;
+            calcVAT();
+        }
+
+        function calcVAT() {
+            const total = parseFloat(document.getElementById('vatTotal')?.value) || 0;
+            const unTaxed = Math.round(total / 1.05);
+            const tax = total - unTaxed;
+
+            const res = document.getElementById('vatResults');
+            if (res) {
+                res.innerHTML = `
+                    <div class="flex justify-between"><span>未稅金額 (Net Amount):</span> <span class="font-mono font-bold">$${unTaxed.toLocaleString()}</span></div>
+                    <div class="flex justify-between"><span>營業稅額 (5% VAT):</span> <span class="font-mono font-bold text-rose-600">$${tax.toLocaleString()}</span></div>
+                    <div class="flex justify-between border-t border-indigo-200 pt-1 font-bold text-sm"><span>含稅總額 (Total):</span> <span class="font-mono text-indigo-900">$${total.toLocaleString()}</span></div>
+                `;
+            }
+        }
+
+        function renderGenericToolView(container, toolId) {
+            const tool = accountingTools.find(t => t.id === toolId);
+            if (!tool) return;
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col space-y-4">
+                    <div class="flex items-center space-x-3 pb-3 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 text-indigo-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid ${tool.icon || 'fa-calculator'}"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">${tool.name}</h2>
+                            <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-medium">${tool.category}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-500 leading-relaxed">${tool.desc || '這是會計多功能小工具的專屬工作視窗。'}</p>
+
+                    <!-- Interactive Mock Tool Area -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders text-indigo-500"></i>
+                            數據參數輸入區
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label class="block text-slate-600 mb-1">主要數值 A</label>
+                                <input type="number" value="1000" class="w-full bg-white border border-slate-200 rounded-lg p-2 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">主要數值 B</label>
+                                <input type="number" value="250" class="w-full bg-white border border-slate-200 rounded-lg p-2 font-mono">
+                            </div>
+                        </div>
+
+                        <button onclick="alertToast('分析與試算結果已更新！', 'success')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl font-semibold transition">
+                            執行計算
+                        </button>
+                    </div>
+
+                    <!-- Gemini AI Assist Callout -->
+                    <div class="mt-auto bg-purple-50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+                        <div class="text-xs text-purple-900">
+                            <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-wand-magic-sparkles"></i> 遇到此項目的複雜會計難題？</span>
+                            可直接切換至「Gemini AI 會計助理」進行深度諮詢與自動分錄生成。
+                        </div>
+                        <button onclick="selectTool(1)" class="whitespace-nowrap bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition">
+                            前往 AI 助理
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveData(showToast = false) {
+            saveAccountsToStorage();
+            if (showToast) {
+                alertToast('所有帳務與設定資料已成功儲存至本地與 Cookie！', 'success');
+            }
+        }
+
+        function openDataManagementModal() {
+            updateStorageSizeLabel();
+            const copyBox = document.getElementById('jsonCopyBox');
+            if (copyBox) copyBox.classList.add('hidden');
+            const importBox = document.getElementById('jsonImportBox');
+            if (importBox) importBox.classList.add('hidden');
+            document.getElementById('dataMgmtModal')?.classList.remove('hidden');
+        }
+
+        function closeDataManagementModal() {
+            document.getElementById('dataMgmtModal')?.classList.add('hidden');
+        }
+
+        function toggleJsonImportBox() {
+            const importBox = document.getElementById('jsonImportBox');
+            if (importBox) {
+                importBox.classList.toggle('hidden');
+            }
+        }
+
+        function importJsonData() {
+            const textArea = document.getElementById('jsonImportTextArea');
+            if (!textArea) return;
+
+            const rawText = textArea.value.trim();
+            if (!rawText) {
+                alertToast('請輸入或貼上 JSON 備份文字！', 'warning');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(rawText);
+                let importedAccounts = [];
+
+                if (Array.isArray(parsed)) {
+                    importedAccounts = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    if (Array.isArray(parsed.accounts)) {
+                        importedAccounts = parsed.accounts;
+                    } else if (parsed.user && parsed.pass) {
+                        importedAccounts = [parsed];
+                    }
+                }
+
+                if (importedAccounts.length === 0) {
+                    alertToast('無法識別有效的帳號 JSON 資料格式！', 'error');
+                    return;
+                }
+
+                const isValid = importedAccounts.every(acc => acc && typeof acc.user === 'string' && typeof acc.pass === 'string');
+                if (!isValid) {
+                    alertToast('JSON 資料欄位缺少 user 或 pass 屬性！', 'error');
+                    return;
+                }
+
+                userAccounts = importedAccounts;
+                saveAccountsToStorage();
+                updateStorageSizeLabel();
+
+                if (currentToolId === 'account_mgmt') {
+                    selectTool('account_mgmt');
+                }
+
+                textArea.value = '';
+                toggleJsonImportBox();
+                alertToast(`成功還原 ${userAccounts.length} 筆帳戶資料！`, 'success');
+            } catch(e) {
+                alertToast('JSON 格式解析錯誤，請檢查貼上的文字內容！', 'error');
+            }
+        }
+
+        function exportData() {
+            try {
+                const jsonStr = JSON.stringify(userAccounts, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.href = url;
+                downloadAnchor.download = `accounting_app_backup_${new Date().toISOString().split('T')[0]}.json`;
+                downloadAnchor.style.display = 'none';
+                document.body.appendChild(downloadAnchor);
+                
+                downloadAnchor.click();
+
+                setTimeout(() => {
+                    if (document.body.contains(downloadAnchor)) {
+                        document.body.removeChild(downloadAnchor);
+                    }
+                    URL.revokeObjectURL(url);
+                }, 500);
+
+                alertToast('已成功下發 JSON 備份檔！', 'success');
+            } catch(e) {
+                console.error("Blob export failed, fallback to copy text", e);
+                copyJsonBackupText();
+            }
+        }
+
+        function copyJsonBackupText() {
+            const jsonStr = JSON.stringify(userAccounts, null, 2);
+            const copyBox = document.getElementById('jsonCopyBox');
+            const textArea = document.getElementById('jsonTextArea');
+
+            if (textArea) textArea.value = jsonStr;
+            if (copyBox) copyBox.classList.remove('hidden');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(jsonStr).then(() => {
+                    alertToast('已複製帳務 JSON 備份內容至剪貼簿！', 'success');
+                }).catch(() => {
+                    alertToast('請直接手動全選下方框內的文字備份', 'info');
+                });
+            } else {
+                alertToast('已展開文字框，請手動複製備份文字', 'info');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('確定要清除所有本地帳密與設定快取嗎？將還原至初始狀態。')) {
+                localStorage.removeItem('app_user_accounts');
+                userAccounts = [
+                    { user: "admin", pass: "0215", role: "admin", created: "2026-01-01" }
+                ];
+                saveAccountsToStorage();
+                closeDataManagementModal();
+                switchView('viewHome');
+                alertToast('已將系統資料重置為預設狀態。', 'info');
+            }
+        }
+
+        function checkAutoLogin() {
+            switchView('viewHome');
+        }
+
+        /* Custom Floating Toast Alert Utility */
+        function alertToast(message, type = 'info') {
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                warning: 'bg-amber-500 text-white',
+                info: 'bg-slate-800 text-white'
+            };
+
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-xmark',
+                warning: 'fa-triangle-exclamation',
+                info: 'fa-circle-info'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-sm"></i> <span>${message}</span>`;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+```
